@@ -71,6 +71,21 @@ void main() {
       expect(find.text('My details'), findsOneWidget);
     });
 
+    testWidgets('a guest who taps Buy now signs in and lands in checkout without tapping again', (t) async {
+      final g = buildGateway(userId: null);
+      await pumpApp(t, gateway: g, location: '/model/iphone-12');
+      await t.tap(find.text('Buy now'));
+      await t.pumpAndSettle();
+      expect(find.text('Budget Aapka, Phone Hamara'), findsOneWidget, reason: 'guests are asked to sign in first');
+      expect(g.rpcCalls.where((c) => c.fn == 'cart_add'), isEmpty, reason: 'nothing is added for a guest');
+      await t.enterText(find.widgetWithText(TextFormField, 'Email'), 'buyer@test.local');
+      await t.enterText(find.widgetWithText(TextFormField, 'Password'), 'secret-123');
+      await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await t.pumpAndSettle();
+      expect(g.rpcCalls.where((c) => c.fn == 'cart_add').length, 1, reason: 'the original action continued');
+      expect(find.textContaining('securely'), findsOneWidget, reason: 'the shopper is now in checkout');
+    });
+
     testWidgets('sign-up that needs email verification does not sign the user in', (t) async {
       final g = buildGateway(userId: null);
       await pumpApp(t, gateway: g, location: '/auth');

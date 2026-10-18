@@ -8,16 +8,17 @@ import '../models/catalog.dart';
 import '../providers.dart';
 import '../widgets/widgets.dart';
 
-/// Account-specific actions need a signed-in customer; guests are sent to sign in and returned here afterwards.
-bool ensureSignedIn(BuildContext context, WidgetRef ref) {
+/// Account-specific actions need a signed-in customer. Guests are sent to sign in, and if they sign in the action carries on
+/// by itself (a guest who taps "Buy now" ends up in checkout without tapping again). Returns false if they did not sign in.
+Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref) async {
   if (ref.read(isSignedInProvider)) return true;
   final here = GoRouterState.of(context).uri.toString();
-  context.push('/auth?from=${Uri.encodeComponent(here)}');
-  return false;
+  await context.push('/auth?from=${Uri.encodeComponent(here)}');
+  return context.mounted && ref.read(isSignedInProvider);
 }
 
 Future<void> toggleWishlist(BuildContext context, WidgetRef ref, String modelId) async {
-  if (!ensureSignedIn(context, ref)) return;
+  if (!await ensureSignedIn(context, ref)) return;
   try {
     await ref.read(cartRepoProvider).toggleWishlist(modelId);
     ref.invalidate(wishlistProvider);
@@ -28,7 +29,7 @@ Future<void> toggleWishlist(BuildContext context, WidgetRef ref, String modelId)
 
 /// Returns true if the unit is now in the cart.
 Future<bool> addUnitToCart(BuildContext context, WidgetRef ref, String unitId) async {
-  if (!ensureSignedIn(context, ref)) return false;
+  if (!await ensureSignedIn(context, ref)) return false;
   try {
     await ref.read(cartRepoProvider).add(unitId);
     ref.invalidate(cartProvider);

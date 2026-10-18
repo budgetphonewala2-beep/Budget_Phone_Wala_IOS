@@ -59,3 +59,19 @@ Push needs an Apple Developer account and cannot be tested without one:
 
 - Not built or run on iOS here; first Mac build may need `pod install` fixes for plugin versions.
 - No signing team, certificates or provisioning profiles exist in the repo by design.
+
+## Codemagic (no Mac needed)
+
+The iOS repository is `budgetphonewala2-beep/Budget_Phone_Wala_IOS` (a copy of `apps/customer_app`, pushed with `git subtree split`). It is registered in Codemagic and `codemagic.yaml` defines three workflows:
+
+| Workflow | Needs | Result |
+|---|---|---|
+| `ios-compile-check` | `SUPABASE_URL`, `SUPABASE_ANON_KEY` variables only | Proves analyze + tests + iOS compile. Verified passing. Not installable |
+| `ios-signed-ipa` | Apple Developer Program, App Store Connect API key named `BudgetPhonewala`, device UDID registered (ad_hoc) or TestFlight (app_store) | Installable `.ipa` |
+| `android-release` | optional upload keystore | APK + AAB |
+
+To get an `.ipa` for your own iPhone:
+1. Join the Apple Developer Program (paid).
+2. Apple Developer > Devices: register your iPhone's UDID.
+3. App Store Connect > Users and Access > Integrations > create an API key; add it in Codemagic (Teams > Integrations > App Store Connect) with the name `BudgetPhonewala`.
+4. Start the `ios-signed-ipa` workflow, then install the `.ipa` from the build page (open the link on the iPhone).

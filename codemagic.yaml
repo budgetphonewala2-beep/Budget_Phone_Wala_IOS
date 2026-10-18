@@ -6,6 +6,7 @@
 # Workflows
 #   ios-compile-check  Builds the iOS app WITHOUT code signing. Proves the project compiles and tests pass on macOS.
 #                      The result is not installable on a phone.
+#   ios-unsigned-ipa   Unsigned .ipa. Not installable by itself; Sideloadly/AltStore can sign it with a FREE Apple ID (7-day install).
 #   ios-signed-ipa     Builds an installable .ipa. Needs an Apple Developer Program membership:
 #                      1) Codemagic > Teams > Integrations > App Store Connect: add an API key and name it as below.
 #                      2) Register the iPhone's UDID in Apple Developer > Devices (for ad_hoc) or use TestFlight (app_store).
@@ -46,6 +47,28 @@ workflows:
         script: flutter build ios --release --no-codesign --dart-define-from-file=env/dev.json
     artifacts:
       - build/ios/iphoneos/Runner.app
+
+  ios-unsigned-ipa:
+    name: iOS unsigned .ipa (for free-Apple-ID sideloading)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - *env_file
+      - name: Dependencies
+        script: flutter pub get
+      - name: Build iOS without signing
+        script: flutter build ios --release --no-codesign --dart-define-from-file=env/dev.json
+      - name: Package unsigned .ipa
+        script: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
+          zip -qry BudgetPhonewala-unsigned.ipa Payload
+    artifacts:
+      - BudgetPhonewala-unsigned.ipa
 
   ios-signed-ipa:
     name: iOS signed .ipa

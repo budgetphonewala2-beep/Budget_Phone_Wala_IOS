@@ -10,6 +10,11 @@ class AppEnv {
   static const String oauthRedirect =
       String.fromEnvironment('OAUTH_REDIRECT', defaultValue: 'in.budgetphonewala.app://login-callback');
 
+  /// Where links in emails (confirm sign-up, reset password) land. A web page that hands the one-time code to the app,
+  /// because email apps often refuse to open custom app links directly. Google sign-in keeps using [oauthRedirect].
+  static const String emailRedirect =
+      String.fromEnvironment('EMAIL_REDIRECT', defaultValue: 'https://budget-phone-wala-admin.vercel.app/open-app');
+
   static bool get isConfigured => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
   /// Public product photos (bucket is public by design).

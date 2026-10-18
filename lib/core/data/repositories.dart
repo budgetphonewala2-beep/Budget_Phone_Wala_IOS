@@ -21,9 +21,10 @@ class CatalogRepository {
     return d == null ? null : ModelDetail.fromJson(_map(d));
   }
 
+  /// Only brands that have at least one phone in stock, so a chip or filter never leads to an empty result.
   Future<List<String>> brands() async {
-    final r = await _g.select('brands', columns: 'name', eq: {'is_active': true}, orderBy: 'name');
-    return r.map((e) => e['name'].toString()).toList();
+    final r = await _g.select('public_catalog_models', columns: 'brand', limit: 1000);
+    return {for (final e in r) e['brand'].toString()}.toList()..sort();
   }
 
   Future<StoreSettings> settings() async {

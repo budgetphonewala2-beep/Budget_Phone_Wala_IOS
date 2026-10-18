@@ -154,7 +154,7 @@ FakeGateway buildGateway({String? userId = 'user-a'}) {
   g.rpcs['cart_remove'] = (_) => null;
   g.rpcs['wishlist_toggle'] = (_) => true;
   g.tables['store_settings'] = (_) => [{'shop_name': 'BudgetPhonewala', 'address': 'Pandharpur', 'cod_enabled': false, 'reservation_minutes': 10, 'pickup_enabled': true, 'delivery_enabled': true}];
-  g.tables['brands'] = (_) => [{'name': 'Apple'}];
+  g.tables['public_catalog_models'] = (_) => [{'brand': 'Apple'}, {'brand': 'Apple'}];
   g.tables['banners'] = (_) => [];
   g.tables['faqs'] = (_) => [];
   g.tables['addresses'] = (_) => [addressJson()];

@@ -31,7 +31,7 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<bool> signUp({required String email, required String password, required String fullName}) => _guard(() async {
         final r = await _c.auth.signUp(
-          email: email.trim(), password: password, data: {'full_name': fullName.trim()}, emailRedirectTo: AppEnv.oauthRedirect,
+          email: email.trim(), password: password, data: {'full_name': fullName.trim()}, emailRedirectTo: AppEnv.emailRedirect,
         );
         return r.session != null;
       });
@@ -46,7 +46,7 @@ class SupabaseAuthService implements AuthService {
 
   @override
   Future<void> resetPassword(String email) =>
-      _guard(() async => _c.auth.resetPasswordForEmail(email.trim(), redirectTo: AppEnv.oauthRedirect));
+      _guard(() async => _c.auth.resetPasswordForEmail(email.trim(), redirectTo: AppEnv.emailRedirect));
 
   @override
   Future<void> signOut() => _guard(() async => _c.auth.signOut());

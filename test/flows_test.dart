@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:budgetphonewala/core/router/app_router.dart';
 import 'package:budgetphonewala/core/data/services.dart';
 import 'package:budgetphonewala/core/providers.dart';
@@ -53,6 +54,21 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Cart'), findsOneWidget); // returned to the page they wanted
       expect(find.textContaining('Apple iPhone 12'), findsOneWidget);
+    });
+
+    testWidgets('signing in from a pushed sign-in screen closes it and shows the account', (t) async {
+      final g = buildGateway(userId: null);
+      final c = await pumpApp(t, gateway: g, location: '/profile');
+      // the Profile tab opens sign-in with push(), exactly like this
+      unawaited(c.read(routerProvider).push('/auth?from=%2Fprofile'));
+      await t.pumpAndSettle();
+      expect(find.text('Budget Aapka, Phone Hamara'), findsOneWidget);
+      await t.enterText(find.widgetWithText(TextFormField, 'Email'), 'buyer@test.local');
+      await t.enterText(find.widgetWithText(TextFormField, 'Password'), 'secret-123');
+      await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await t.pumpAndSettle();
+      expect(find.text('Budget Aapka, Phone Hamara'), findsNothing);
+      expect(find.text('My details'), findsOneWidget);
     });
 
     testWidgets('sign-up that needs email verification does not sign the user in', (t) async {

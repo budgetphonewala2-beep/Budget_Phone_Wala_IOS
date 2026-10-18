@@ -23,8 +23,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   _Mode _mode = _Mode.signIn;
-  bool _busy = false, _show = false;
+  bool _busy = false, _show = false, _left = false;
   String? _error, _info;
+
+  /// Closes this screen once an account is signed in. The router also redirects, but a screen opened with
+  /// push() (for example from Profile) is not removed by a redirect, so the screen leaves by itself.
+  void _leave() {
+    if (_left || !mounted) return;
+    _left = true;
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go(widget.from ?? '/');
+    }
+  }
 
   @override
   void dispose() {
@@ -52,8 +65,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       switch (_mode) {
         case _Mode.signIn:
           await auth.signIn(email: _email.text, password: _password.text);
+          _leave();
         case _Mode.signUp:
           final signedIn = await auth.signUp(email: _email.text, password: _password.text, fullName: _name.text);
+          if (signedIn) _leave();
           if (!signedIn && mounted) {
             setState(() { _info = 'We sent a verification link to ${_email.text.trim()}. Open it, then sign in.'; _mode = _Mode.signIn; });
           }
@@ -66,6 +81,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Google sign-in returns through a deep link, so the account can appear while this screen is open
+    ref.listen(currentUserIdProvider, (_, next) {
+      if (next != null) _leave();
+    });
     final s = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final title = switch (_mode) { _Mode.signIn => 'Sign in', _Mode.signUp => 'Create account', _Mode.forgot => 'Reset password' };

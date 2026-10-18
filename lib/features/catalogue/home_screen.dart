@@ -325,15 +325,40 @@ class _StoreCard extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(settings.shopName, style: t.titleMedium),
-          if (settings.address.isNotEmpty) Text(settings.address, style: t.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 6),
+          if (settings.address.isNotEmpty) _InfoRow(Icons.place_outlined, settings.address),
+          if (settings.hours.isNotEmpty) _InfoRow(Icons.schedule, settings.hours),
+          if (settings.phone.isNotEmpty) _InfoRow(Icons.call_outlined, '+91 ${settings.phone}'),
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: AppButton('Directions', () => openMaps(context, settings), style: BtnStyle.outlined, icon: Icons.place_outlined)),
             const SizedBox(width: 8),
             Expanded(child: AppButton('Call', () => callShop(context, settings), style: BtnStyle.outlined, icon: Icons.call_outlined)),
           ]),
+          if (settings.instagram.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            AppButton('Follow @budgetphonewala', () => openUrl(context, settings.instagram), style: BtnStyle.outlined, icon: Icons.photo_camera_outlined),
+          ],
         ]),
       ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.icon, this.text);
+  final IconData icon;
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 18, color: c),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c))),
+      ]),
     );
   }
 }

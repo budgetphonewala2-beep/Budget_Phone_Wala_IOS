@@ -67,7 +67,7 @@ Future<void> openMaps(BuildContext context, StoreSettings s) async {
     showSnack(context, 'The shop has not added an address yet.');
     return;
   }
-  await _launch(context, Uri.parse('https://maps.google.com/?q=${Uri.encodeComponent(s.address)}'), 'No maps app found');
+  await _launch(context, Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${s.shopName}, ${s.address}')}'), 'No maps app found');
 }
 
 Future<void> openUrl(BuildContext context, String url) async {

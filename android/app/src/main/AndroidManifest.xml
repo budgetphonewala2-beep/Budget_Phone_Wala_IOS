@@ -1,10 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- The payment SDK declares NFC for contactless card scanning, which this app does not offer. Removed: least privilege. -->
+    <uses-permission android:name="android.permission.NFC" tools:node="remove" />
     <application
         android:label="BudgetPhonewala"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

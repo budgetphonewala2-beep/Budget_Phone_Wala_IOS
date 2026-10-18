@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../errors/app_exception.dart';
+import 'retry.dart';
 
 /// The only door to the backend. Repositories depend on this interface so tests can use a fake.
 /// All failures are converted to [AppException] (user-safe messages, stable codes).
@@ -43,16 +44,28 @@ class SupabaseGateway implements Gateway {
   @override
   Stream<String?> get userIdChanges => _c.auth.onAuthStateChange.map((s) => s.session?.user.id).distinct();
 
-  Future<T> _guard<T>(Future<T> Function() f) async {
+  /// Reads can be repeated safely, so they retry transient failures (with backoff and jitter) and give up after 15 s.
+  /// Writes and payments are never repeated automatically: a duplicate could create a second order or charge.
+  static const _readTimeout = Duration(seconds: 15);
+  static const _writeTimeout = Duration(seconds: 30);
+
+  /// Database functions that only read, so a repeat cannot change anything.
+  static const _readRpcs = {
+    'catalog_search', 'catalog_model_detail', 'cart_list', 'wishlist_list', 'my_orders', 'quote_delivery',
+    'coupon_quote',
+  };
+
+  Future<T> _guard<T>(Future<T> Function() f, {bool read = false}) async {
     try {
-      return await f().timeout(const Duration(seconds: 30));
+      if (read) return await retryTransient(() => f().timeout(_readTimeout));
+      return await f().timeout(_writeTimeout);
     } catch (e) {
       throw toAppException(e);
     }
   }
 
   @override
-  Future<dynamic> rpc(String fn, [Map<String, dynamic>? params]) => _guard(() => _c.rpc(fn, params: params));
+  Future<dynamic> rpc(String fn, [Map<String, dynamic>? params]) => _guard(() => _c.rpc(fn, params: params), read: _readRpcs.contains(fn));
 
   @override
   Future<List<Map<String, dynamic>>> select(String table,
@@ -64,7 +77,7 @@ class SupabaseGateway implements Gateway {
       if (orderBy != null) t = t.order(orderBy, ascending: ascending);
       if (limit != null) t = t.limit(limit);
       return await t;
-    });
+    }, read: true);
   }
 
   @override

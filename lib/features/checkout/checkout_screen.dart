@@ -139,6 +139,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       await _payOnline(placed, items, profile);
     } catch (e) {
       final ex = toAppException(e);
+      if (ex.code == 'ERROR') ref.read(errorReporterProvider).report(e, null, operation: 'place_order', category: 'checkout');
       if (ex.code == 'UNAVAILABLE') ref.invalidate(cartProvider);
       if (ex.code == 'BAD_COUPON') _applied = null;
       if (mounted) setState(() { _phase = _Phase.editing; _error = ex.message; });
@@ -159,6 +160,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
     switch (outcome) {
       case PaymentFailure f:
+        if (!f.cancelled) ref.read(errorReporterProvider).report(f.message, null, operation: 'razorpay_checkout', category: 'payment');
         setState(() { _phase = _Phase.editing; _error = f.cancelled ? 'Payment was cancelled. Your phone is held for a few minutes, you can try again.' : '${f.message} You can try again.'; });
       case PaymentSuccess ok:
         setState(() => _phase = _Phase.confirming);

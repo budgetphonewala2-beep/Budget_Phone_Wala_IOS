@@ -7,7 +7,9 @@ import '../../core/providers.dart';
 import '../../core/util/actions.dart';
 import '../../core/widgets/widgets.dart';
 
-/// Two cards per row with equal heights (robust at large font sizes).
+/// Equal-height card rows (robust at large font sizes). Two columns on phones, more on wide screens.
+int gridColumns(double width) => width >= 840 ? 4 : (width >= 600 ? 3 : 2);
+
 class SliverModelGrid extends ConsumerWidget {
   const SliverModelGrid({super.key, required this.items, this.padding = const EdgeInsets.symmetric(horizontal: 16)});
   final List<CatalogModel> items;
@@ -16,31 +18,34 @@ class SliverModelGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wished = ref.watch(wishlistIdsProvider);
-    final rows = <List<CatalogModel>>[for (var i = 0; i < items.length; i += 2) items.sublist(i, i + 2 > items.length ? items.length : i + 2)];
-    return SliverList.separated(
-      itemCount: rows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, r) => Padding(
-        padding: padding,
-        child: IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            for (var c = 0; c < 2; c++) ...[
-              if (c == 1) const SizedBox(width: 12),
-              Expanded(
-                child: c < rows[r].length
-                    ? ModelCard(
-                        model: rows[r][c],
-                        wished: wished.contains(rows[r][c].id),
-                        onWish: () => toggleWishlist(context, ref, rows[r][c].id),
-                        onTap: () => context.push('/model/${rows[r][c].slug}'),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ]),
+    return SliverLayoutBuilder(builder: (context, constraints) {
+      final cols = gridColumns(constraints.crossAxisExtent);
+      final rows = <List<CatalogModel>>[for (var i = 0; i < items.length; i += cols) items.sublist(i, i + cols > items.length ? items.length : i + cols)];
+      return SliverList.separated(
+        itemCount: rows.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (_, r) => Padding(
+          padding: padding,
+          child: IntrinsicHeight(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              for (var c = 0; c < cols; c++) ...[
+                if (c > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: c < rows[r].length
+                      ? ModelCard(
+                          model: rows[r][c],
+                          wished: wished.contains(rows[r][c].id),
+                          onWish: () => toggleWishlist(context, ref, rows[r][c].id),
+                          onTap: () => context.push('/model/${rows[r][c].slug}'),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ]),
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 

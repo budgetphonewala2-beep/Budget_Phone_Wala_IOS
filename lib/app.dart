@@ -18,6 +18,11 @@ class BudgetPhoneApp extends ConsumerWidget {
       darkTheme: buildTheme(Brightness.dark),
       themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
+      // Tablets, foldables and landscape (orientation is not locked): keep the phone layout readable instead of stretching it.
+      builder: (context, child) => ColoredBox(
+        color: Theme.of(context).colorScheme.surface,
+        child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 840), child: child)),
+      ),
     );
   }
 }

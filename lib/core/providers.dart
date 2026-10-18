@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'data/error_reporter.dart';
 import 'data/gateway.dart';
 import 'data/repositories.dart';
 import 'data/services.dart';
@@ -32,6 +33,9 @@ final userIdProvider = StreamProvider<String?>((ref) async* {
 });
 final currentUserIdProvider = Provider<String?>((ref) => ref.watch(userIdProvider).value ?? ref.watch(gatewayProvider).userId);
 final isSignedInProvider = Provider<bool>((ref) => ref.watch(currentUserIdProvider) != null);
+
+/// Crash and error reporting. A no-op until main() installs the real reporter, so tests never send anything.
+final errorReporterProvider = Provider<ErrorReporter>((ref) => const NoopErrorReporter());
 
 // ---------- preferences ----------
 class ThemeModeController extends Notifier<ThemeMode> {

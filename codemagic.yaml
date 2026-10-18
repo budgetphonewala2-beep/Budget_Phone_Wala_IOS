@@ -1,0 +1,96 @@
+# Codemagic CI for the BudgetPhonewala customer app (Flutter, iOS + Android).
+#
+# Public build settings come from Codemagic environment variables (never committed):
+#   SUPABASE_URL, SUPABASE_ANON_KEY      (the anon key is public by design; the service-role key must NEVER be set here)
+#
+# Workflows
+#   ios-compile-check  Builds the iOS app WITHOUT code signing. Proves the project compiles and tests pass on macOS.
+#                      The result is not installable on a phone.
+#   ios-signed-ipa     Builds an installable .ipa. Needs an Apple Developer Program membership:
+#                      1) Codemagic > Teams > Integrations > App Store Connect: add an API key and name it as below.
+#                      2) Register the iPhone's UDID in Apple Developer > Devices (for ad_hoc) or use TestFlight (app_store).
+#   android-release    Signed APK + AAB (needs the upload keystore added under Codemagic > Code signing identities).
+
+definitions:
+  env_file: &env_file
+    name: Create env file from Codemagic variables
+    script: |
+      mkdir -p env
+      cat > env/dev.json <<EOF
+      {
+        "ENV": "dev",
+        "SUPABASE_URL": "$SUPABASE_URL",
+        "SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY",
+        "OAUTH_REDIRECT": "in.budgetphonewala.app://login-callback"
+      }
+      EOF
+
+workflows:
+  ios-compile-check:
+    name: iOS compile check (no signing)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - *env_file
+      - name: Dependencies
+        script: flutter pub get
+      - name: Analyze
+        script: flutter analyze
+      - name: Tests
+        script: flutter test
+      - name: Build iOS without signing
+        script: flutter build ios --release --no-codesign --dart-define-from-file=env/dev.json
+    artifacts:
+      - build/ios/iphoneos/Runner.app
+
+  ios-signed-ipa:
+    name: iOS signed .ipa
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: BudgetPhonewala   # the name you give the App Store Connect API key in Codemagic
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: ad_hoc          # use app_store for TestFlight / App Store
+        bundle_identifier: in.budgetphonewala.app
+    scripts:
+      - *env_file
+      - name: Dependencies
+        script: flutter pub get
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build .ipa
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist \
+            --dart-define-from-file=env/dev.json
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+  android-release:
+    name: Android release (APK + AAB)
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      flutter: stable
+      java: 17
+    scripts:
+      - *env_file
+      - name: Dependencies
+        script: flutter pub get
+      - name: Tests
+        script: flutter test
+      - name: Build
+        script: |
+          flutter build apk --release --dart-define-from-file=env/dev.json
+          flutter build appbundle --release --dart-define-from-file=env/dev.json
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab

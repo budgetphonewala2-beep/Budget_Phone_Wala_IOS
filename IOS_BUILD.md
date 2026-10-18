@@ -57,7 +57,7 @@ Push needs an Apple Developer account and cannot be tested without one:
 
 ## Known limits
 
-- Not built or run on iOS here; first Mac build may need `pod install` fixes for plugin versions.
+- The unsigned iOS build compiles on Codemagic (macOS). It has not been run on a simulator or a physical iPhone.
 - No signing team, certificates or provisioning profiles exist in the repo by design.
 
 ## Codemagic (no Mac needed)

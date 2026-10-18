@@ -101,9 +101,12 @@ class FakePayments implements PaymentLauncher {
   FakePayments(this.outcome);
   PaymentOutcome outcome;
   int calls = 0;
+  String? lastContact, lastName;
   @override
   Future<PaymentOutcome> pay({required String keyId, required String razorpayOrderId, required int amountPaise, required String name, required String description, String? contact, String? email}) async {
     calls++;
+    lastContact = contact;
+    lastName = name;
     return outcome;
   }
 }

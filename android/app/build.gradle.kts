@@ -50,8 +50,10 @@ android {
             // Real release signing when key.properties exists; otherwise debug-signed so local release runs still work.
             // A debug-signed build is NOT acceptable for the Play Store.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // R8 shrinking is off on purpose: it stripped Kotlin/DataStore classes used by shared_preferences and
+            // Supabase session storage (release build hung after sign-in). Dart code is still compiled ahead-of-time.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

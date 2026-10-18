@@ -147,10 +147,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _payOnline(PlacedOrder placed, List<CartLine> items, Profile profile) async {
     setState(() => _phase = _Phase.paying);
+    // prefill the payment sheet with who is receiving the phone, so the shopper never retypes it
+    final addr = (ref.read(addressesProvider).value ?? const <Address>[]).where((a) => a.id == _addressId).firstOrNull;
+    final name = _pickup ? _name.text.trim() : (addr?.fullName.isNotEmpty == true ? addr!.fullName : profile.fullName);
+    final phone = _pickup ? _phone.text.trim() : (addr?.phone.isNotEmpty == true ? addr!.phone : profile.phone);
     final outcome = await ref.read(paymentLauncherProvider).pay(
           keyId: placed.razorpayKey!, razorpayOrderId: placed.razorpayOrderId!, amountPaise: placed.totalPaise,
-          name: _pickup ? _name.text.trim() : profile.fullName, description: 'Order ${placed.orderNumber}',
-          contact: _pickup ? _phone.text.trim() : profile.phone, email: profile.email.isEmpty ? null : profile.email,
+          name: name, description: 'Order ${placed.orderNumber}',
+          contact: phone, email: profile.email.isEmpty ? null : profile.email,
         );
     if (!mounted) return;
     switch (outcome) {
@@ -299,7 +303,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               ),
                             ),
-                          if (_quote != null && !_quote!.serviceable) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_quote!.reason ?? 'We do not deliver to this pincode', style: t.bodyMedium?.copyWith(color: s.error))),
+                          if (addr != null && _quote != null && !_quote!.serviceable) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_quote!.reason ?? 'We do not deliver to this pincode', style: t.bodyMedium?.copyWith(color: s.error))),
                         ],
                         const SizedBox(height: 16),
                         Text('Payment', style: t.titleMedium),
@@ -354,7 +358,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               const SizedBox(height: 8),
                               _Line('Subtotal', rupees(_subtotal)),
                               if (_discount > 0) _Line('Coupon discount', '-${rupees(_discount)}', good: true),
-                              _Line('Delivery', _pickup ? (_quote == null || _quote!.feePaise == 0 ? 'Free (pickup)' : rupees(_quote!.feePaise)) : (_quote == null ? '...' : (_quote!.feePaise == 0 ? 'Free' : rupees(_quote!.feePaise)))),
+                              _Line('Delivery', _pickup ? (_quote == null || _quote!.feePaise == 0 ? 'Free (pickup)' : rupees(_quote!.feePaise)) : (addr == null ? 'Add an address' : (_quote == null ? '...' : (_quote!.feePaise == 0 ? 'Free' : rupees(_quote!.feePaise))))),
                               if (_cod && settings.codFeePaise > 0) _Line('Cash on delivery fee', rupees(settings.codFeePaise)),
                               if (_tax(settings) > 0) _Line('Tax', rupees(_tax(settings))),
                               const SizedBox(height: 8),
@@ -385,7 +389,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   AppButton(
                     _cod ? 'Place order (pay on delivery)' : 'Pay ${rupees(total)} securely',
-                    busy || items.isEmpty || soldCount > 0 || (_quote?.serviceable == false) ? null : () => _place(settings, profile),
+                    busy || items.isEmpty || soldCount > 0 || (!_pickup && addr == null) || (_quote?.serviceable == false) ? null : () => _place(settings, profile),
                     icon: _cod ? Icons.local_shipping_outlined : Icons.lock_outline,
                   ),
                   const SizedBox(height: 6),

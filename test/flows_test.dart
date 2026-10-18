@@ -151,6 +151,8 @@ void main() {
       }
       expect(create.headers?['x-idempotency-key'], isNotEmpty);
       expect(pay.calls, 1);
+      expect(pay.lastContact, '9822145678'); // prefilled from the delivery address, not retyped
+      expect(pay.lastName, 'Test Buyer');
       final verify = g.invokeCalls.firstWhere((c) => c.fn == 'verify-payment');
       expect(verify.body['razorpay_signature'], 'sig_1');
       expect(verify.body['razorpay_order_id'], 'order_RZ1');
@@ -210,6 +212,20 @@ void main() {
       await t.tap(find.text('Place order (pay on delivery)'));
       await pumpUntil(t, find.text('Order placed'));
       expect(g.invokeCalls.firstWhere((c) => c.fn == 'create-order').body['payment_method'], 'cod');
+    });
+
+    testWidgets('with no address yet the shopper sees a friendly prompt, not a pincode error, and cannot pay', (t) async {
+      final g = buildGateway();
+      g.tables['addresses'] = (_) => [];
+      g.rpcs['quote_delivery'] = (_) => {'serviceable': false, 'fee_paise': 0, 'reason': 'Enter a valid 6-digit pincode', 'cod_allowed': false};
+      final c = await pumpApp(t, gateway: g);
+      c.read(checkoutSelectionProvider.notifier).set(['u1']);
+      c.read(routerProvider).go('/checkout');
+      await t.pumpAndSettle();
+      expect(find.text('Enter a valid 6-digit pincode'), findsNothing);
+      expect(find.text('Add an address'), findsOneWidget);
+      final btn = t.widget<FilledButton>(find.widgetWithText(FilledButton, 'Pay ₹27,499 securely'));
+      expect(btn.onPressed, isNull);
     });
 
     testWidgets('an unserviceable pincode blocks payment', (t) async {

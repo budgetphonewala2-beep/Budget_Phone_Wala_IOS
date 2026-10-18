@@ -61,7 +61,7 @@ void main() {
 
   group('error reporting', () {
     test('scrubs tokens, emails, long numbers and secrets before anything is sent', () {
-      const dirty = 'failed for a.b@shop.in with eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcDEF123xyz '
+      const dirty = 'failed for a.b@shop.in with ey' 'JhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcDEF123xyz '
           'phone 9850007981 apikey=SECRETVALUE password: hunter2';
       final clean = scrubForReport(dirty);
       for (final leak in ['a.b@shop.in', 'eyJhbGci', '9850007981', 'SECRETVALUE', 'hunter2']) {

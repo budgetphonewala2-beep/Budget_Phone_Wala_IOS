@@ -19,7 +19,7 @@ iOS apps can only be built and signed on macOS with Xcode. This project was deve
 1. A Mac with Xcode 16 or newer and CocoaPods (`sudo gem install cocoapods` or `brew install cocoapods`).
 2. Flutter 3.47.x on the Mac (same version as Windows: see `docs/FLUTTER_SDK.md`).
 3. An **Apple Developer Program** membership (paid) to run on a real device beyond 7 days, use TestFlight or publish.
-4. The `env/dev.json` file (copy `env/dev.example.json` and fill in the public Supabase URL and anon key; Razorpay key id is fetched from the server at checkout, nothing secret is needed in the app).
+4. The `env/prod.json` file (copy `env/prod.example.json` and fill in the public Supabase URL and anon key; Razorpay key id is fetched from the server at checkout, nothing secret is needed in the app).
 
 ## Build steps
 
@@ -28,11 +28,11 @@ cd apps/customer_app
 flutter pub get
 cd ios && pod install --repo-update && cd ..
 open ios/Runner.xcworkspace        # in Xcode: Runner target > Signing & Capabilities > choose your Team
-flutter build ios --release --dart-define-from-file=env/dev.json     # device build
-flutter build ipa --release --dart-define-from-file=env/dev.json     # App Store / TestFlight archive
+flutter build ios --release --dart-define-from-file=env/prod.json     # device build
+flutter build ipa --release --dart-define-from-file=env/prod.json     # App Store / TestFlight archive
 ```
 
-Run on a simulator while developing: `flutter run --dart-define-from-file=env/dev.json -d "iPhone 16"`.
+Run on a simulator while developing: `flutter run --dart-define-from-file=env/prod.json -d "iPhone 16"`.
 
 ## Google sign-in on iOS
 

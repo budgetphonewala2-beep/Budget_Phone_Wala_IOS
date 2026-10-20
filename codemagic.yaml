@@ -1,7 +1,7 @@
 # Codemagic CI for the BudgetPhonewala customer app (Flutter, iOS + Android).
 #
-# Public build settings come from Codemagic environment variables (never committed):
-#   SUPABASE_URL, SUPABASE_ANON_KEY      (the anon key is public by design; the service-role key must NEVER be set here)
+# Build settings:
+#   None are needed: the public production Supabase URL and anon key are written by the env_file step below.
 #
 # Workflows
 #   ios-compile-check  Builds the iOS app WITHOUT code signing. Proves the project compiles and tests pass on macOS.
@@ -13,18 +13,29 @@
 #   android-release    Signed APK + AAB (needs the upload keystore added under Codemagic > Code signing identities).
 
 definitions:
+  # The values below are PUBLIC (the Supabase anon key ships inside every app). They are written here on purpose so a stale
+  # variable in the Codemagic dashboard can never point a build at the wrong project. The service-role key must never appear here.
   env_file: &env_file
-    name: Create env file from Codemagic variables
+    name: Create production env file and check it
     script: |
       mkdir -p env
-      cat > env/dev.json <<EOF
+      cat > env/prod.json <<EOF
       {
-        "ENV": "dev",
-        "SUPABASE_URL": "$SUPABASE_URL",
-        "SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY",
+        "ENV": "production",
+        "SUPABASE_URL": "https://ojzkyrkngxojpcpplhow.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qemt5cmtuZ3hvanBjcHBsaG93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMjEyMzgsImV4cCI6MjEwNzg5NzIzOH0.L3ps3rOW7_8AkWdt7FJKOwkt9wnANCwoo8JpY0yZswM",
         "OAUTH_REDIRECT": "in.budgetphonewala.app://login-callback"
       }
       EOF
+      # refuse to build against the deleted development project or with a privileged key
+      if grep -q "adsiivnqfxxyjbmvsspz" env/prod.json; then echo "Refusing: env points at the old development project"; exit 1; fi
+      if grep -qi "service_role" env/prod.json; then echo "Refusing: a privileged key is in the env file"; exit 1; fi
+      python3 - <<'PY'
+      import json,base64
+      d=json.load(open("env/prod.json")); t=d["SUPABASE_ANON_KEY"].split(".")[1]; t+="="*(-len(t)%4)
+      c=json.loads(base64.urlsafe_b64decode(t)); assert c["role"]=="anon" and c["ref"]=="ojzkyrkngxojpcpplhow", "anon key does not belong to production"
+      print("env OK: production project, anon key")
+      PY
 
 workflows:
   ios-compile-check:
@@ -44,7 +55,7 @@ workflows:
       - name: Tests
         script: flutter test
       - name: Build iOS without signing
-        script: flutter build ios --release --no-codesign --dart-define-from-file=env/dev.json
+        script: flutter build ios --release --no-codesign --dart-define-from-file=env/prod.json
     artifacts:
       - build/ios/iphoneos/Runner.app
 
@@ -61,7 +72,7 @@ workflows:
       - name: Dependencies
         script: flutter pub get
       - name: Build iOS without signing
-        script: flutter build ios --release --no-codesign --dart-define-from-file=env/dev.json
+        script: flutter build ios --release --no-codesign --dart-define-from-file=env/prod.json
       - name: Package unsigned .ipa
         script: |
           mkdir -p Payload
@@ -93,7 +104,7 @@ workflows:
         script: |
           flutter build ipa --release \
             --export-options-plist=/Users/builder/export_options.plist \
-            --dart-define-from-file=env/dev.json
+            --dart-define-from-file=env/prod.json
     artifacts:
       - build/ios/ipa/*.ipa
 
@@ -112,8 +123,8 @@ workflows:
         script: flutter test
       - name: Build
         script: |
-          flutter build apk --release --dart-define-from-file=env/dev.json
-          flutter build appbundle --release --dart-define-from-file=env/dev.json
+          flutter build apk --release --dart-define-from-file=env/prod.json
+          flutter build appbundle --release --dart-define-from-file=env/prod.json
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
       - build/app/outputs/bundle/release/*.aab

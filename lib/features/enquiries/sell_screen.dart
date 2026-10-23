@@ -176,7 +176,8 @@ class _SellScreenState extends ConsumerState<SellScreen> {
               Wrap(spacing: 8, runSpacing: 8, children: [
                 for (var i = 0; i < _photos.length; i++)
                   Stack(children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(_photos[i].bytes, width: 72, height: 72, fit: BoxFit.cover)),
+                    ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(_photos[i].bytes, width: 72, height: 72, fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox(width: 72, height: 72, child: Icon(Icons.broken_image_outlined)))),
                     Positioned(right: 0, top: 0, child: InkWell(onTap: () => setState(() => _photos.removeAt(i)), child: const CircleAvatar(radius: 11, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 14, color: Colors.white)))),
                   ]),
                 if (_photos.length < 6) OutlinedButton.icon(onPressed: _pick, style: OutlinedButton.styleFrom(minimumSize: const Size(0, 72)), icon: const Icon(Icons.add_a_photo_outlined), label: const Text('Add')),

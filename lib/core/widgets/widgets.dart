@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -260,7 +262,11 @@ class RemoteImage extends StatelessWidget {
     return CachedNetworkImage(
       imageUrl: url, fit: fit,
       placeholder: (_, _) => const ShimmerBox(radius: 0),
-      errorWidget: (_, _, _) => placeholder(),
+      // a broken or half-written cached file would otherwise fail forever: drop it so the next build downloads it again
+      errorWidget: (_, _, _) {
+        unawaited(CachedNetworkImage.evictFromCache(url).catchError((_) => false));
+        return placeholder();
+      },
       imageBuilder: (_, provider) => Semantics(label: semanticLabel, image: true, child: Image(image: provider, fit: fit)),
     );
   }

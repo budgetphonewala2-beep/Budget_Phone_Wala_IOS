@@ -48,6 +48,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _load() async {
+    // called from timers and the filter sheet, so the screen may already be closed
+    if (!mounted) return;
     final gen = ++_gen;
     setState(() { _loading = true; _error = null; });
     try {
@@ -92,7 +94,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       context: context, isScrollControlled: true, showDragHandle: true,
       builder: (_) => _FilterSheet(initial: _f, brands: brands),
     );
-    if (r != null) _apply(r);
+    if (r != null && mounted) _apply(r);
   }
 
   @override

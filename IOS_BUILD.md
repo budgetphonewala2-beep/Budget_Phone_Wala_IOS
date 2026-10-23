@@ -67,11 +67,11 @@ The iOS repository is `budgetphonewala2-beep/Budget_Phone_Wala_IOS` (a copy of `
 | Workflow | Needs | Result |
 |---|---|---|
 | `ios-compile-check` | `SUPABASE_URL`, `SUPABASE_ANON_KEY` variables only | Proves analyze + tests + iOS compile. Verified passing. Not installable |
-| `ios-signed-ipa` | Apple Developer Program, App Store Connect API key named `BudgetPhonewala`, device UDID registered (ad_hoc) or TestFlight (app_store) | Installable `.ipa` |
+| `ios-app-store` | Apple Developer Program, app record in App Store Connect, App Store Connect API key named `BudgetPhonewala` | Signed `.ipa` uploaded to App Store Connect (TestFlight); never submitted for review |
 | `android-release` | optional upload keystore | APK + AAB |
 
 To get an `.ipa` for your own iPhone:
 1. Join the Apple Developer Program (paid).
 2. Apple Developer > Devices: register your iPhone's UDID.
 3. App Store Connect > Users and Access > Integrations > create an API key; add it in Codemagic (Teams > Integrations > App Store Connect) with the name `BudgetPhonewala`.
-4. Start the `ios-signed-ipa` workflow, then install the `.ipa` from the build page (open the link on the iPhone).
+4. Start the `ios-app-store` workflow; when App Store Connect finishes processing, add testers in TestFlight and install with the TestFlight app.

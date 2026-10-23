@@ -15,6 +15,10 @@ class AppEnv {
   static const String emailRedirect =
       String.fromEnvironment('EMAIL_REDIRECT', defaultValue: 'https://budget-phone-wala-admin.vercel.app/open-app');
 
+  /// Shows "Sign in with Apple" on iOS (App Store guideline 4.8: an app offering Google sign-in must also offer an equivalent
+  /// privacy-focused option). Off until the Apple provider is configured in Supabase; the App Store build turns it on.
+  static const bool appleSignIn = bool.fromEnvironment('APPLE_SIGN_IN');
+
   static bool get isConfigured => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
   /// Public product photos (bucket is public by design).

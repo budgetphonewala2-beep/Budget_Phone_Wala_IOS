@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:budgetphonewala/core/router/app_router.dart';
 import 'package:budgetphonewala/core/data/services.dart';
 import 'package:budgetphonewala/core/providers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,6 +111,17 @@ void main() {
       expect(find.text('Enter a valid email address'), findsOneWidget);
       expect(find.text('Enter your password'), findsOneWidget);
       expect(g.userId, isNull);
+    });
+
+    testWidgets('Sign in with Apple stays hidden on iOS until the build enables the configured provider', (t) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await pumpApp(t, gateway: buildGateway(userId: null), location: '/auth');
+        expect(find.text('Continue with Google'), findsOneWidget);
+        expect(find.text('Sign in with Apple'), findsNothing); // APPLE_SIGN_IN is not defined in tests
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 

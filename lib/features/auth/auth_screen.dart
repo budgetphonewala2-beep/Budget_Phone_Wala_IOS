@@ -1,6 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/config/env.dart';
 
 import '../../core/errors/app_exception.dart';
 import '../../core/providers.dart';
@@ -31,6 +37,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void _leave() {
     if (_left || !mounted) return;
     _left = true;
+    // On iOS, Google/Apple sign-in ran in an in-app Safari sheet that stays on top after the deep link returns: close it.
+    if (defaultTargetPlatform == TargetPlatform.iOS) unawaited(closeInAppWebView().catchError((_) {}));
     final router = GoRouter.of(context);
     if (router.canPop()) {
       router.pop();
@@ -131,6 +139,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             const SizedBox(height: 8),
             Row(children: [const Expanded(child: Divider()), Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text('or', style: t.bodySmall?.copyWith(color: s.onSurfaceVariant))), const Expanded(child: Divider())]),
             const SizedBox(height: 16),
+            if (AppEnv.appleSignIn && defaultTargetPlatform == TargetPlatform.iOS) ...[
+              _AppleButton(_busy ? null : () => _run(() => ref.read(authServiceProvider).signInWithApple())),
+              const SizedBox(height: 12),
+            ],
             AppButton('Continue with Google', _busy ? null : () => _run(() => ref.read(authServiceProvider).signInWithGoogle()), style: BtnStyle.outlined, icon: Icons.g_mobiledata),
           ],
           const SizedBox(height: 16),
@@ -167,6 +179,28 @@ class _Notice extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ok ? s.onTertiaryContainer : s.onErrorContainer))),
       ]),
+    );
+  }
+}
+
+/// Apple's sign-in button style (black, Apple logo, "Sign in with Apple"), as the Human Interface Guidelines require.
+class _AppleButton extends StatelessWidget {
+  const _AppleButton(this.onPressed);
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? Colors.white : Colors.black;
+    final fg = dark ? Colors.black : Colors.white;
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(backgroundColor: bg, foregroundColor: fg),
+        onPressed: onPressed,
+        icon: const Icon(Icons.apple, size: 22),
+        label: const Text('Sign in with Apple'),
+      ),
     );
   }
 }

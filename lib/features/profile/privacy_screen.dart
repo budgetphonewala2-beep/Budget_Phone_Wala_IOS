@@ -35,7 +35,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Request account deletion?'),
-        content: const Text('The shop will review your request. Your saved addresses, wishlist, cart and notifications will be removed. Past orders and invoices are kept for accounting and warranty, without your profile details.'),
+        content: const Text('The shop completes deletion requests within 30 days, usually much sooner. Your sign-in, name, mobile number, saved addresses, wishlist, cart, notifications and enquiry photos will be removed. Past orders and invoices are kept for accounting and warranty, without your profile details.'),
         actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Keep my account')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Request deletion'))],
       ),
     );
@@ -43,7 +43,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     setState(() => _busy = true);
     try {
       await ref.read(accountRepoProvider).requestAccountDeletion();
-      if (mounted) showSnack(context, 'Deletion requested. We will confirm once it is processed.');
+      if (mounted) showSnack(context, 'Deletion requested. It is completed within 30 days and your sign-in is then disabled.');
     } catch (e) {
       if (mounted) showSnack(context, toAppException(e).message);
     } finally {

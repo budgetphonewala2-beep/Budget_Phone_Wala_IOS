@@ -7,9 +7,9 @@
 #   ios-compile-check  Builds the iOS app WITHOUT code signing. Proves the project compiles and tests pass on macOS.
 #                      The result is not installable on a phone.
 #   ios-unsigned-ipa   Unsigned .ipa. Not installable by itself; Sideloadly/AltStore can sign it with a FREE Apple ID (7-day install).
-#   ios-signed-ipa     Builds an installable .ipa. Needs an Apple Developer Program membership:
+#   ios-app-store      Signed App Store build, uploaded to App Store Connect (TestFlight). Needs an Apple Developer Program membership:
 #                      1) Codemagic > Teams > Integrations > App Store Connect: add an API key and name it as below.
-#                      2) Register the iPhone's UDID in Apple Developer > Devices (for ad_hoc) or use TestFlight (app_store).
+#                      2) Create the app record for in.budgetphonewala.app in App Store Connect. Never submits for review.
 #   android-release    Signed APK + AAB (needs the upload keystore added under Codemagic > Code signing identities).
 
 definitions:
@@ -81,32 +81,54 @@ workflows:
     artifacts:
       - BudgetPhonewala-unsigned.ipa
 
-  ios-signed-ipa:
-    name: iOS signed .ipa
+  ios-app-store:
+    # App Store / TestFlight build. Needs (owner): Apple Developer Program membership, the app record in App Store Connect
+    # for bundle id in.budgetphonewala.app, and an App Store Connect API key (App Manager role) added in
+    # Codemagic > Teams > Integrations > Developer Portal under the name BudgetPhonewala.
+    # It UPLOADS to App Store Connect only; it never submits for review or releases (done by the owner in App Store Connect).
+    name: iOS App Store build (signed, uploads to App Store Connect)
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: BudgetPhonewala   # the name you give the App Store Connect API key in Codemagic
+      app_store_connect: BudgetPhonewala
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
       ios_signing:
-        distribution_type: ad_hoc          # use app_store for TestFlight / App Store
+        distribution_type: app_store
         bundle_identifier: in.budgetphonewala.app
     scripts:
       - *env_file
+      - name: Turn on Sign in with Apple (the Apple provider must be configured in Supabase first)
+        script: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open("env/prod.json")); d["APPLE_SIGN_IN"]=True
+          json.dump(d,open("env/prod.json","w"),indent=2)
+          PY
       - name: Dependencies
         script: flutter pub get
+      - name: Analyze and test
+        script: |
+          flutter analyze
+          flutter test
       - name: Set up code signing
         script: xcode-project use-profiles
-      - name: Build .ipa
+      - name: Build signed .ipa
         script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist \
-            --dart-define-from-file=env/prod.json
+          flutter build ipa --release             --build-number=$BUILD_NUMBER             --export-options-plist=/Users/builder/export_options.plist             --dart-define-from-file=env/prod.json
+      - name: Checksums
+        script: shasum -a 256 build/ios/ipa/*.ipa | tee build/ios/ipa/SHA256SUMS.txt
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/ipa/SHA256SUMS.txt
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
 
   android-release:
     name: Android release (APK + AAB)

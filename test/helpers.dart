@@ -92,6 +92,8 @@ class FakeAuth implements AuthService {
   @override
   Future<void> signInWithGoogle() async => gateway.signIn('user-g');
   @override
+  Future<void> signInWithApple() async => gateway.signIn('user-a');
+  @override
   Future<void> resetPassword(String email) async {}
   @override
   Future<void> signOut() async => gateway.signOut();

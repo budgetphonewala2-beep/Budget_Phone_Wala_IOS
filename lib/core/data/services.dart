@@ -1,17 +1,20 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
 import '../errors/app_exception.dart';
 
-/// Email/password and Google sign-in. Admin rights never come from the client: staff status lives in the database.
+/// Email/password, Google and (iOS) Apple sign-in. Admin rights never come from the client: staff status lives in the database.
 abstract class AuthService {
   /// Returns true when a session exists immediately, false when email verification is required first.
   Future<bool> signUp({required String email, required String password, required String fullName});
   Future<void> signIn({required String email, required String password});
   Future<void> signInWithGoogle();
+  Future<void> signInWithApple();
   Future<void> resetPassword(String email);
   Future<void> signOut();
 }
@@ -40,9 +43,19 @@ class SupabaseAuthService implements AuthService {
   Future<void> signIn({required String email, required String password}) =>
       _guard(() async => _c.auth.signInWithPassword(email: email.trim(), password: password));
 
+  // iOS opens the provider page in an in-app Safari sheet (SFSafariViewController), Android in the browser. The sheet is closed
+  // by the sign-in screen once the session arrives through the deep link (see closeAuthBrowser).
+  Future<void> _oauth(OAuthProvider p) => _guard(() async {
+        final ok = await _c.auth.signInWithOAuth(p, redirectTo: AppEnv.oauthRedirect,
+            authScreenLaunchMode: defaultTargetPlatform == TargetPlatform.iOS ? LaunchMode.inAppBrowserView : LaunchMode.platformDefault);
+        if (!ok) throw AppException('UNAVAILABLE', 'Could not open the sign-in page. Please try again.');
+      });
+
   @override
-  Future<void> signInWithGoogle() =>
-      _guard(() async => _c.auth.signInWithOAuth(OAuthProvider.google, redirectTo: AppEnv.oauthRedirect));
+  Future<void> signInWithGoogle() => _oauth(OAuthProvider.google);
+
+  @override
+  Future<void> signInWithApple() => _oauth(OAuthProvider.apple);
 
   @override
   Future<void> resetPassword(String email) =>

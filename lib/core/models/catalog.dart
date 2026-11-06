@@ -20,7 +20,8 @@ class CatalogModel {
   final int? batteryMah, minRam;
 
   int get discountPct => maxMrpPaise > fromPricePaise ? ((maxMrpPaise - fromPricePaise) * 100 ~/ maxMrpPaise) : 0;
-  String get title => '$brand $name';
+  /// "Apple iPhone 15". Staff often type the brand into the model name too, so it is not repeated.
+  String get title => brand.isEmpty || name.toLowerCase().startsWith('${brand.toLowerCase()} ') ? name : '$brand $name';
 
   factory CatalogModel.fromJson(Map<String, dynamic> j) => CatalogModel(
         id: _s(j['id']), slug: _s(j['slug']), name: _s(j['name']), brand: _s(j['brand']),

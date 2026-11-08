@@ -126,7 +126,7 @@ workflows:
           app-store-connect bundle-ids create in.budgetphonewala.app --name BudgetPhonewala --platform IOS || echo "bundle id already registered (or see the error above)"
           # Sign in with Apple needs the capability on the App ID; Apple then invalidates older profiles and a new one is created below
           BID=$(app-store-connect bundle-ids list --bundle-id-identifier in.budgetphonewala.app --platform IOS --json | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
-          app-store-connect bundle-ids enable-capabilities "$BID" --capability APPLE_ID_AUTH || echo "Sign in with Apple capability already enabled (or see the error above)"
+          app-store-connect bundle-ids enable-capabilities "$BID" --capability "Sign In with Apple" || echo "Sign in with Apple capability already enabled (or see the error above)"
           app-store-connect fetch-signing-files in.budgetphonewala.app --type IOS_APP_STORE --create --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
           xcode-project use-profiles

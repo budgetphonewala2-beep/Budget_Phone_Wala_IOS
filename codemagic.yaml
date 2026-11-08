@@ -119,8 +119,9 @@ workflows:
           flutter test
       - name: Set up code signing (creates the App ID, certificate and App Store profile on first run)
         script: |
+          set -e
           keychain initialize
-          app-store-connect bundle-ids create in.budgetphonewala.app --name BudgetPhonewala --platform IOS || echo "bundle id already registered"
+          app-store-connect bundle-ids create in.budgetphonewala.app --name BudgetPhonewala --platform IOS || echo "bundle id already registered (or see the error above)"
           app-store-connect fetch-signing-files in.budgetphonewala.app --type IOS_APP_STORE --create --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
           xcode-project use-profiles

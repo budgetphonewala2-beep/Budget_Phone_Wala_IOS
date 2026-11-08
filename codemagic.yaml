@@ -84,13 +84,13 @@ workflows:
   ios-app-store:
     # App Store / TestFlight build. Needs (owner): Apple Developer Program membership, the app record in App Store Connect
     # for bundle id in.budgetphonewala.app, and an App Store Connect API key (App Manager role) added in
-    # Codemagic > Teams > Integrations > Developer Portal under the name BudgetPhonewala.
+    # Codemagic > Teams > Integrations > Developer Portal under the name "Bhaskar Gupta" (the account owner).
     # It UPLOADS to App Store Connect only; it never submits for review or releases (done by the owner in App Store Connect).
     name: iOS App Store build (signed, uploads to App Store Connect)
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: BudgetPhonewala
+      app_store_connect: Bhaskar Gupta
     environment:
       flutter: stable
       xcode: latest
@@ -100,13 +100,18 @@ workflows:
         bundle_identifier: in.budgetphonewala.app
     scripts:
       - *env_file
-      - name: Turn on Sign in with Apple (the Apple provider must be configured in Supabase first)
+      - name: Sign in with Apple (only when APPLE_SIGN_IN=true is set in Codemagic, after the Apple provider is configured in Supabase)
         script: |
-          python3 - <<'PY'
+          if [ "$APPLE_SIGN_IN" = "true" ]; then
+            python3 - <<'PY'
           import json
           d=json.load(open("env/prod.json")); d["APPLE_SIGN_IN"]=True
           json.dump(d,open("env/prod.json","w"),indent=2)
           PY
+            echo "Sign in with Apple: on"
+          else
+            echo "Sign in with Apple: off (set APPLE_SIGN_IN=true in Codemagic once Supabase has the Apple provider)"
+          fi
       - name: Dependencies
         script: flutter pub get
       - name: Analyze and test

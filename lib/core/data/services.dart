@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
@@ -54,8 +58,35 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<void> signInWithGoogle() => _oauth(OAuthProvider.google);
 
+  /// Native Apple sheet (Face ID / Touch ID). The ID token is exchanged with Supabase, bound to a one-time nonce.
+  /// No timeout here: the person may take a while in Apple's sheet. Cancelling is not an error.
   @override
-  Future<void> signInWithApple() => _oauth(OAuthProvider.apple);
+  Future<void> signInWithApple() async {
+    final raw = List.generate(32, (_) => Random.secure().nextInt(256)).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final AuthorizationCredentialAppleID cred;
+    try {
+      cred = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        nonce: sha256.convert(utf8.encode(raw)).toString(),
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      throw AppException('UNAVAILABLE', 'Sign in with Apple did not finish. Please try again.');
+    }
+    final token = cred.identityToken;
+    if (token == null) throw AppException('UNAVAILABLE', 'Apple did not return a sign-in token. Please try again.');
+    try {
+      final res = await _c.auth.signInWithIdToken(provider: OAuthProvider.apple, idToken: token, nonce: raw).timeout(const Duration(seconds: 30));
+      // Apple shares the name only on the very first sign-in: keep it if the profile has none yet
+      final name = [cred.givenName, cred.familyName].whereType<String>().map((x) => x.trim()).where((x) => x.isNotEmpty).join(' ');
+      final uid = res.user?.id;
+      if (name.isNotEmpty && uid != null) {
+        await _c.from('customer_profiles').update({'full_name': name}).eq('id', uid).eq('full_name', '');
+      }
+    } catch (e) {
+      throw toAppException(e);
+    }
+  }
 
   @override
   Future<void> resetPassword(String email) =>

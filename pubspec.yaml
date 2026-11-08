@@ -46,6 +46,8 @@ dependencies:
   intl: ^0.20.3
   uuid: ^4.6.0
   package_info_plus: ^10.2.2
+  sign_in_with_apple: ^8.2.0
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:

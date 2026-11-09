@@ -116,6 +116,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       setState(() => _error = _quote?.reason ?? 'Delivery is not available for this address.');
       return;
     }
+    // close the keyboard before the payment sheet; otherwise iOS gives focus back to the phone field afterwards and its
+    // keypad (no Done key) stays open
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _phase = _Phase.placing);
     try {
       final repo = ref.read(orderRepoProvider);
@@ -256,7 +259,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ? EmptyState(icon: Icons.shopping_cart_outlined, title: 'Nothing to check out', body: 'Add a phone to your cart first.', actionLabel: 'Browse phones', onAction: () => context.go('/'))
                   : Form(
                       key: _form,
-                      child: ListView(padding: const EdgeInsets.all(16), children: [
+                      child: ListView(padding: const EdgeInsets.all(16), keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, children: [
                         if (_error != null) _Banner(_error!, error: true, action: _placed != null ? ('Cancel this order', _cancelHeldOrder) : null),
                         if (soldCount > 0) const _Banner('One or more phones were just sold. Go back to your cart and remove them.', error: true),
                         Text('How do you want it?', style: t.titleMedium),

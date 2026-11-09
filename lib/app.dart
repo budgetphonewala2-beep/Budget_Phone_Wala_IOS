@@ -19,9 +19,15 @@ class BudgetPhoneApp extends ConsumerWidget {
       themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
       // Tablets, foldables and landscape (orientation is not locked): keep the phone layout readable instead of stretching it.
-      builder: (context, child) => ColoredBox(
-        color: Theme.of(context).colorScheme.surface,
-        child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 840), child: child)),
+      // Tapping outside a text field closes the keyboard. iOS number and phone keypads have no Done key, so without this
+      // the keyboard could not be closed at all.
+      builder: (context, child) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: ColoredBox(
+          color: Theme.of(context).colorScheme.surface,
+          child: Align(alignment: Alignment.topCenter, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 840), child: child)),
+        ),
       ),
     );
   }

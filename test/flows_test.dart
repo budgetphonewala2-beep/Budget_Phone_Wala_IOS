@@ -68,8 +68,10 @@ void main() {
       await t.enterText(find.widgetWithText(TextFormField, 'Password'), 'secret-123');
       await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
       await t.pumpAndSettle();
-      expect(find.text('Budget Aapka, Phone Hamara'), findsNothing);
-      expect(find.text('My details'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Sign in'), findsNothing); // the sign-in screen closed
+      // signing in from the Profile tab lands on Home
+      expect(find.text('Shop by budget'), findsOneWidget);
+      expect(c.read(routerProvider).routerDelegate.currentConfiguration.uri.path, '/');
     });
 
     testWidgets('a guest who taps Buy now signs in and lands in checkout without tapping again', (t) async {

@@ -40,10 +40,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     // On iOS, Google/Apple sign-in ran in an in-app Safari sheet that stays on top after the deep link returns: close it.
     if (defaultTargetPlatform == TargetPlatform.iOS) unawaited(closeInAppWebView().catchError((_) {}));
     final router = GoRouter.of(context);
-    if (router.canPop()) {
+    final from = widget.from;
+    // Signing in from the Profile tab (or with no target) lands on Home. A sign-in started by an action (Buy now,
+    // wishlist, checkout) returns to that screen so the action carries on.
+    if (from == null || from.isEmpty || from == '/profile') {
+      router.go('/');
+    } else if (router.canPop()) {
       router.pop();
     } else {
-      router.go(widget.from ?? '/');
+      router.go(from);
     }
   }
 
@@ -140,7 +145,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             Row(children: [const Expanded(child: Divider()), Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text('or', style: t.bodySmall?.copyWith(color: s.onSurfaceVariant))), const Expanded(child: Divider())]),
             const SizedBox(height: 16),
             if (AppEnv.appleSignIn && defaultTargetPlatform == TargetPlatform.iOS) ...[
-              _AppleButton(_busy ? null : () => _run(() => ref.read(authServiceProvider).signInWithApple())),
+              _AppleButton(_busy ? null : () => _run(() async {
+                await ref.read(authServiceProvider).signInWithApple();
+                // Apple signs in inside the app: leave as soon as the session exists instead of waiting for the auth event
+                if (ref.read(isSignedInProvider) || ref.read(gatewayProvider).userId != null) _leave();
+              })),
               const SizedBox(height: 12),
             ],
             AppButton('Continue with Google', _busy ? null : () => _run(() => ref.read(authServiceProvider).signInWithGoogle()), style: BtnStyle.outlined, icon: Icons.g_mobiledata),
